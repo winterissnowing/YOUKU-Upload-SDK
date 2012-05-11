@@ -21,15 +21,22 @@ var URI = "https://openapi.youku.com/";
     };
     var PORTION =  1024*1024*10;
 
+    var uploadOptions = {
+        upload_token: "",
+        upload_url: "",
+        api_url: URI,
+        client_id: CLIENT_ID,
+        access_token: ACCESS_TOKEN
+    };
+    
     
     // 表单形式上传视频
-    var uploadFormData = function (upload_token){
+    var uploadFormData = function (){
         var file = $("form[name='video-upload'] input[name='FileData']")[0].files[0];
         var fileSize = file.fileSize || file.size;
         var formData = new FormData();
         formData.append("FileData",file);
         var xhr = new XMLHttpRequest();
-        var url = "http://upload.youku.com/api/upload_form_data/" + "?upload_token=" + upload_token;
         xhr.upload.onprogress = function(e){
             if (e.lengthComputable){
                 progress(e.loaded, fileSize);
@@ -38,17 +45,17 @@ var URI = "https://openapi.youku.com/";
         xhr.onload = function(){
             var response = eval("(" + this.responseText + ")");
             if (response["upload_server_name"]) {
-                success(upload_token,response["upload_server_name"]);
+                success(response["upload_server_name"]);
             } else {
                 alert("上传文件失败");
             }
         }
-        xhr.open("post",url,true);
+        xhr.open("post",uploadOptions["upload_url"],true);
         xhr.send(formData);
     };
 
     // 上传视频
-    var uploadStreamData = function (upload_token,start){
+    var uploadStreamData = function (start){
         var file = $("form[name='video-upload'] input[name='FileData']")[0].files[0];
         var fileSize = file.fileSize || file.size;
         var blob = null;
@@ -65,7 +72,6 @@ var URI = "https://openapi.youku.com/";
         } 
         var xhr = new XMLHttpRequest();
         var ranges = "bytes " + (start + 1) + "-" + (start + blob.size) + "/" + fileSize;
-        var url = "http://upload.youku.com/api/upload/" + "?upload_token=" + upload_token;
         xhr.upload.onprogress = function(e){
             if (e.lengthComputable){
                 progress(e.loaded + start, fileSize);
@@ -78,11 +84,11 @@ var URI = "https://openapi.youku.com/";
                     alert(response["description"]);
                 } else {
                     if (response["upload_server_name"]) {
-                        success(upload_token,response["upload_server_name"]);
+                        success(response["upload_server_name"]);
                     } else {
                         var fileTransfered = response["file_transfered"];
                         if (fileTransfered != fileSize) {
-                            uploadStreamData(upload_token,fileTransfered);
+                            uploadStreamData(fileTransfered);
                         }
                     }
                 }
@@ -90,10 +96,33 @@ var URI = "https://openapi.youku.com/";
                 // throw exception
             }
         }
-        xhr.open("post",url,true);
+        xhr.open("post",uploadOptions["upload_url"],true);
         xhr.setRequestHeader("Content-Range",ranges);
         xhr.send(blob);
     };
+
+    var startStreamUpload = function (upload_token,isStream){
+        uploadOptions["upload_token"] = upload_token;
+
+        if (isStream) {
+            var url = "http://upload.youku.com/api/get_server_address/?" + "upload_token=" + upload_token;
+            $.ajax({
+                type: 'POST',
+                url: url,
+                crossDomain: true,
+                complete: function (jqXHR, textStatus){
+                    var reponseData = eval("(" + jqXHR.responseText + ")");
+                    if (reponseData["server_address"]) {
+                        uploadOptions["upload_url"] = "http://" + reponseData["server_address"] + "/api/upload/?" + "upload_token=" + upload_token;
+                        uploadStreamData();
+                    }
+                }
+            });
+        } else {
+            uploadOptions["upload_url"] = "http://upload.youku.com/api/upload_form_data/?" + "upload_token=" + upload_token;
+            uploadFormData();
+        }
+    }
 
     var progress = function (loaded,total){
         var percent = Math.round((loaded / total)*100) + '%';
@@ -151,17 +180,17 @@ var URI = "https://openapi.youku.com/";
         },500);
     };
 
-    var success = function (upload_token,server_name){
+    var success = function (server_name){
         var params = {
-            client_id: CLIENT_ID,
-            access_token: ACCESS_TOKEN,
-            upload_token: upload_token, 
+            client_id: uploadOptions["client_id"],
+            access_token: uploadOptions["access_token"],
+            upload_token: uploadOptions["upload_token"], 
             upload_server_name: server_name
         };
 
         $.ajax({
             type: 'POST',
-            url: URI + "v2/uploads/web/commit.json",
+            url: uploadOptions["api_url"] + "v2/uploads/web/commit.json",
             data: params,
             success: function(data){
                 if (data["video_id"]) {
@@ -185,13 +214,13 @@ var URI = "https://openapi.youku.com/";
                 category: $("form[name='video-upload'] select[name='category']").val(),
                 copyright_type: $("form[name='video-upload'] input[name='copyright_type']").val(),
                 public_type: $("form[name='video-upload'] input[name='public_type']").val(),
-                client_id: CLIENT_ID,
-                access_token: ACCESS_TOKEN,
+                client_id: uploadOptions["client_id"],
+                access_token: uploadOptions["access_token"],
                 file_name: $("form[name='video-upload'] input[name='FileData']").val().split('\\')[2]
         };
         $.ajax({
             type: 'POST',
-            url: URI + "v2/uploads/web/create.json",
+            url: uploadOptions["api_url"] + "v2/uploads/web/create.json",
             data: params,
             crossDomain: true,
             complete: function (jqXHR, textStatus){
@@ -203,8 +232,7 @@ var URI = "https://openapi.youku.com/";
                     tpl +=  '00.00 kbit/s | 00:00:00 | 00.00 % | 00.00 KB / 00.00 KB</div>';
                     $("form[name='video-upload']").hide();
                     $("#upload-status-wraper").html(tpl);
-                    //uploadFormData(reponseData["upload_token"]);
-                    uploadStreamData(reponseData["upload_token"]);
+                    startStreamUpload(reponseData["upload_token"]);
                 } else {
                     alert(reponseData["error"]["description"]);
                 }
@@ -219,7 +247,7 @@ var URI = "https://openapi.youku.com/";
     // 获取视频分类
     $.ajax({
         type: 'POST',
-        url: URI + "v2/schemas/video/category.json",
+        url: uploadOptions["api_url"] + "v2/schemas/video/category.json",
         crossDomain: true,
         complete: function (jqXHR, textStatus){
             var reponseData = eval("(" + jqXHR.responseText + ")");
