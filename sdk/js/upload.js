@@ -101,10 +101,10 @@ var URI = "https://openapi.youku.com/";
         xhr.send(blob);
     };
 
-    var startVideoUpload = function (upload_token,isStream){
+    var startVideoUpload = function (upload_token){
         uploadOptions["upload_token"] = upload_token;
 
-        if (isStream) {
+        if (window['USE_STREAM_UPLOAD']) {
             var url = "http://upload.youku.com/api/get_server_address/?" + "upload_token=" + upload_token;
             $.ajax({
                 type: 'POST',
@@ -114,8 +114,10 @@ var URI = "https://openapi.youku.com/";
                     var reponseData = eval("(" + jqXHR.responseText + ")");
                     if (reponseData["server_address"]) {
                         uploadOptions["upload_url"] = "http://" + reponseData["server_address"] + "/api/upload/?" + "upload_token=" + upload_token;
-                        uploadStreamData();
+                    } else {
+                        uploadOptions["upload_url"] = "http://upload.youku.com/api/upload/?" + "upload_token=" + upload_token;
                     }
+                    uploadStreamData();
                 }
             });
         } else {
