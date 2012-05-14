@@ -101,7 +101,7 @@ var URI = "https://openapi.youku.com/";
         xhr.send(blob);
     };
 
-    var startStreamUpload = function (upload_token,isStream){
+    var startVideoUpload = function (upload_token,isStream){
         uploadOptions["upload_token"] = upload_token;
 
         if (isStream) {
@@ -232,7 +232,7 @@ var URI = "https://openapi.youku.com/";
                     tpl +=  '00.00 kbit/s | 00:00:00 | 00.00 % | 00.00 KB / 00.00 KB</div>';
                     $("form[name='video-upload']").hide();
                     $("#upload-status-wraper").html(tpl);
-                    startStreamUpload(reponseData["upload_token"]);
+                    startVideoUpload(reponseData["upload_token"]);
                 } else {
                     alert(reponseData["error"]["description"]);
                 }
