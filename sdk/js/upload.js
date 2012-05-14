@@ -194,11 +194,12 @@ var URI = "https://openapi.youku.com/";
             type: 'POST',
             url: uploadOptions["api_url"] + "v2/uploads/web/commit.json",
             data: params,
-            success: function(data){
-                if (data["video_id"]) {
+            complete: function (jqXHR, textStatus){
+                var reponseData = eval("(" + jqXHR.responseText + ")");
+                if (reponseData["video_id"]) {
                     var tpl = '<div class="alert alert-success"><h1>上传成功！</h1><br>';
                     tpl += "<p>视频正在转码中，转码完成后，您可以通过以下地址观看视频：";
-                    tpl += "<br>http://v.youku.com/v_show/id_" + data["video_id"] + ".html</p></div>";
+                    tpl += "<br>http://v.youku.com/v_show/id_" + reponseData["video_id"] + ".html</p></div>";
                     $("#upload-status-wraper").html(tpl);
                 }else {
                     $("#upload-status-wraper").html('<div class="alert alert-success"><h1>上传失败！</h1></div>');
@@ -218,7 +219,7 @@ var URI = "https://openapi.youku.com/";
                 public_type: $("form[name='video-upload'] input[name='public_type']").val(),
                 client_id: uploadOptions["client_id"],
                 access_token: uploadOptions["access_token"],
-                file_name: $("form[name='video-upload'] input[name='FileData']").val().split('\\')[2]
+                file_name: $("form[name='video-upload'] input[name='FileData']").val()
         };
         $.ajax({
             type: 'POST',
@@ -226,7 +227,7 @@ var URI = "https://openapi.youku.com/";
             data: params,
             crossDomain: true,
             complete: function (jqXHR, textStatus){
-            var reponseData = eval("(" + jqXHR.responseText + ")");
+                var reponseData = eval("(" + jqXHR.responseText + ")");
                 if (reponseData["upload_token"]) {
                     var tpl = '<h1>正在上传视频</h1><p>请不要关闭浏览器，此操作造成上传失败!';
                     tpl += '<br>上传需要一段时间，请耐心等待.</p><br><div class="progress progress-success" style="margin-bottom: 9px;">';
