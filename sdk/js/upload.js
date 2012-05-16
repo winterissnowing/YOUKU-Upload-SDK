@@ -215,8 +215,8 @@ var URI = "https://openapi.youku.com/";
                 description: $("form[name='video-upload'] textarea[name='description']").val(),
                 tags: $("form[name='video-upload'] input[name='tags']").val(),
                 category: $("form[name='video-upload'] select[name='category']").val(),
-                copyright_type: $("form[name='video-upload'] input[name='copyright_type']").val(),
-                public_type: $("form[name='video-upload'] input[name='public_type']").val(),
+                copyright_type: $("form[name='video-upload'] input[name='copyright_type']:checked").val(),
+                public_type: $("form[name='video-upload'] input[name='public_type']:checked").val(),
                 client_id: uploadOptions["client_id"],
                 access_token: uploadOptions["access_token"],
                 file_name: $("form[name='video-upload'] input[name='FileData']").val()
